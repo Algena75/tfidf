@@ -1,8 +1,4 @@
 from django.db import models
-from decimal import Decimal, ROUND_CEILING
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-from math import log10
 
 
 class Word(models.Model):
@@ -22,8 +18,8 @@ class Word(models.Model):
         return self.word[:30]
 
     class Meta:
-        ordering=('idf',)
-        verbose_name='Word'
+        ordering = ('idf',)
+        verbose_name = 'Word'
         verbose_name_plural = 'Words'
 
 

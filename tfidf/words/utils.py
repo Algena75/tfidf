@@ -34,7 +34,7 @@ def handle_file(file_obj) -> int:
         word_counter = 0
         for row in clear_rows:
             for word in row.split():
-                word_counter +=1
+                word_counter += 1
                 word = word.lower()
                 if word in freq:
                     freq[word] += 1
@@ -52,6 +52,6 @@ def set_idf(word) -> None:
     """Рассчитывает для слова IDF."""
     docs_qty = File.objects.all().count()
     word_docs_qty = WordFile.objects.filter(word_id=word.id).count()
-    idf_value = log10(docs_qty/word_docs_qty)
+    idf_value = log10(docs_qty / word_docs_qty)
     word.idf = idf_value
     word.save()

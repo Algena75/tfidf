@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from django.contrib import messages
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import FileForm
@@ -8,7 +9,10 @@ from .models import File
 from .utils import get_page_obj, handle_file, set_idf
 
 
-def index(request):
+def index(request: HttpRequest) -> HttpResponse:
+    """
+    Представление стартовой страницы. Возвращает список файлов из коллекции.
+    """
     template = 'index.html'
     form = FileForm(request.POST or None)
     files = File.objects.all()
@@ -21,7 +25,11 @@ def index(request):
     return render(request, template, context)
 
 
-def file_details(request, pk):
+def file_details(request: HttpRequest, pk: int) -> HttpResponse:
+    """
+    Представление для анализа файла. Возвращает список из 50 слов с индексами
+    TF / IDF.
+    """
     template = 'index.html'
     file = get_object_or_404(File, pk=pk)
     words = file.words.all()
@@ -38,7 +46,11 @@ def file_details(request, pk):
     return render(request, template, context)
 
 
-def add_file(request):
+def add_file(request: HttpRequest) -> HttpResponse:
+    """
+    Функция добавления текстового файла в коллекцию. Если файл текстовый -
+    запускает обработку файла. В противном случае возвращает ошибку.
+    """
     if request.method == 'POST' and request.FILES:
         file = request.FILES['file']
         ext = Path(file.name).suffix[1:]
@@ -53,13 +65,16 @@ def add_file(request):
     return redirect('words:index')
 
 
-def page_not_found(request, exception):
+def page_not_found(request: HttpRequest, exception) -> HttpResponse:
+    """Кастомная страница 404."""
     return render(request, '404.html')
 
 
-def csrf_failure(request, reason=''):
+def csrf_failure(request: HttpRequest, reason: str = '') -> HttpResponse:
+    """Кастомная страница 403."""
     return render(request, '403.html')
 
 
-def server_error(request, exception=None):
+def server_error(request: HttpRequest, exception=None) -> HttpResponse:
+    """Кастомная страница 500."""
     return render(request, '500.html')
