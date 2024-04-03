@@ -127,4 +127,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CSRF_FAILURE_VIEW = 'words.views.csrf_failure'
 
 # объявляем константы:  ЗАПИСЕЙ_НА_СТРАНИЦЕ
-RECORDS_PER_PAGE: int = 10
+RECORDS_PER_PAGE: int = 25
