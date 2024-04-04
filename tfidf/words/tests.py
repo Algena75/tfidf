@@ -95,9 +95,6 @@ class FormsFileTest(TestCase):
             content=cls.small_gif,
             content_type='image/gif'
         )
-        # cls.post_gif = File.objects.create(
-        #     file=cls.uploaded_gif,
-        # )
         cls.small_txt = (
             bytes('one two three four five', 'utf-8')
         )
