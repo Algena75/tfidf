@@ -24,7 +24,9 @@ def handle_file(file_obj) -> int:
     Обработчик текстовых файлов. Обновляет таблицу слов и возвращает
     кол-во слов в файле.
     """
-    with open(os.path.join('media/files/', file_obj.name), 'r') as myfile:
+    with open(os.path.join(
+        settings.MEDIA_ROOT, f'files/{file_obj.name}'
+    ), 'r') as myfile:
         file = F(myfile)
         rows = file.readlines()
         clear_rows = [row.strip().translate(str.maketrans(
@@ -44,7 +46,6 @@ def handle_file(file_obj) -> int:
             word, _ = Word.objects.get_or_create(word=req)
             tf = float(freq.get(req) / word_counter)
             WordFile.objects.create(word=word, file=file_obj, tf=tf)
-            # set_idf(word)
         return word_counter
 
 
