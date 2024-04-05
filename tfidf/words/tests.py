@@ -1,13 +1,14 @@
 import shutil
 import tempfile
 from http import HTTPStatus
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from .models import File, Word
+from .models import File, Word, WordFile
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -77,7 +78,7 @@ class ViewsTest(TestCase):
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class FormsFileTest(TestCase):
+class AbstractTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
@@ -113,6 +114,44 @@ class FormsFileTest(TestCase):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
+# @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+# class FormsFileTest(TestCase):
+#     @classmethod
+#     def setUpClass(cls) -> None:
+#         super().setUpClass()
+#         cls.loading_client = Client()
+#         cls.small_gif = (
+#             b'\x47\x49\x46\x38\x39\x61\x02\x00'
+#             b'\x01\x00\x80\x00\x00\x00\x00\x00'
+#             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+#             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+#             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+#             b'\x0A\x00\x3B'
+#         )
+#         cls.uploaded_gif = SimpleUploadedFile(
+#             name='small.gif',
+#             content=cls.small_gif,
+#             content_type='image/gif'
+#         )
+#         cls.small_txt = (
+#             bytes('one two three four five', 'utf-8')
+#         )
+#         cls.uploaded_txt = SimpleUploadedFile(
+#             name='small.txt',
+#             content=cls.small_txt,
+#             content_type='text/plain'
+#         )
+#         cls.post = cls.loading_client.post(
+#             reverse('words:add_file'),
+#             {'file': cls.uploaded_txt}
+#         )
+# 
+#     @classmethod
+#     def tearDownClass(cls):
+#         super().tearDownClass()
+#         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+# 
+class FormsFileTest(AbstractTest):
     def setUp(self):
         self.guest_client = Client()
 
@@ -126,8 +165,10 @@ class FormsFileTest(TestCase):
         """
         files_count = File.objects.count()
         words_count = Word.objects.count()
+        words_file_relations = WordFile.objects.count()
         self.assertEqual(files_count, 1)
         self.assertEqual(words_count, 5)
+        self.assertEqual(words_file_relations, 5)
         self.guest_client.post(
             reverse('words:add_file'),
             {'file': FormsFileTest.uploaded_gif}
@@ -142,3 +183,52 @@ class FormsFileTest(TestCase):
         self.assertEqual(files_count_3, 2)
         words_count_2 = Word.objects.count()
         self.assertEqual(words_count_2, 5)
+
+
+class WordModelTest(AbstractTest):
+    def setUp(self):
+        self.guest_client = Client()
+
+    def test_tf_idf(self):
+        """
+        Проверяет правильность расчёта индексов TF/IDF.
+        """
+        response_1 = self.guest_client.get(
+            reverse('words:file_details', kwargs={'pk': 1})
+        ).context.get('page_obj')
+        word = Word.objects.get(word='one')
+        word_idf = word.idf
+        word_tf = word.files.filter(file_id=1).first().tf
+        self.assertEqual(float(word_idf), float(0))
+        self.assertEqual(float(word_tf), float(1/5))
+        self.guest_client.post(
+            reverse('words:add_file'),
+            {'file': SimpleUploadedFile(
+                name='one_more_file.txt',
+                content=bytes(
+                    'six seven eight nine', 'utf-8'
+                ),
+                content_type='text/plain'
+            )}
+        )
+        response_1 = self.guest_client.get(
+            reverse('words:file_details', kwargs={'pk': 1})
+        ).context.get('page_obj')
+        word = Word.objects.get(word='one')
+        word_idf = word.idf
+        self.assertEqual(float(word_idf), float(0.30103))
+
+    def test_models_have_correct_object_names(self):
+        """Проверяем, что у модели Word корректно работает __str__."""
+        self.guest_client.post(
+            reverse('words:add_file'),
+            {'file': SimpleUploadedFile(
+                name='long_word.txt',
+                content=bytes(
+                    'Вэтомфайлетолькооднонооченьдлинноеслово', 'utf-8'
+                ),
+                content_type='text/plain'
+            )}
+        )
+        word = Word.objects.get(pk=6)
+        self.assertEqual(word.word[:30], word.__str__())
